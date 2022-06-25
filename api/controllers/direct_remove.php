@@ -1,0 +1,48 @@
+<?php
+// database connection
+require "../../config.php";
+require "../../vendor/autoload.php";
+
+  $options = array(
+    'cluster' => 'eu',
+    'u
+    seTLS' => true
+  );
+ $pusher = new Pusher\Pusher(
+    '027ae0da475a8bfb329b',
+    '3710f31eab0abba775cd',
+    '1326807',
+    $options
+  );
+
+
+
+
+$id = $_POST['id'];
+$vessel_id = $_POST['vessel_id'];
+$move_id = $_POST['move_id'];
+$data['message'] =$vessel_id ;
+$query ="UPDATE   direct
+        SET is_delete = 1
+                where  id = '$id'
+                    ";
+
+if(mysqli_query($con, $query)){
+$query2 ="UPDATE   move
+        SET is_delete = 1
+                where  move_id = '$move_id' AND vessel_id = '$vessel_id'
+                    ";
+}
+if(mysqli_query($con, $query2)){
+    $pusher->trigger('direct', 'report', $data);
+    $pusher->trigger('stats', 'report', $data);
+    $pusher->trigger('live', 'add-vessel', $data);
+
+      $message1= '*تم حذف نقلة صرف مباشر*';
+
+    require "../../telegram.php";
+    send($vessel_id ,$message1, 'unloading', false);
+    echo json_encode(array('success' => 1));
+}
+else return http_response_code(422);  
+?>
